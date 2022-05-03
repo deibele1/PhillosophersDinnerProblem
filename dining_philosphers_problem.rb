@@ -1,8 +1,9 @@
 require './store'
 require './sharer'
 
-$min_sleep = 0.001
-$max_sleep = 0.002
+$min_sleep = 1
+$max_sleep = 2
+$spegetii = true
 
 $threads = []
 
@@ -45,6 +46,8 @@ class Philosopher
     @name = name
     @forks = forks
     @mutex = Mutex.new
+    @retired = false
+    start
   end
 
   def name
@@ -52,7 +55,7 @@ class Philosopher
   end
 
   def eat
-    sharer = Sharer.new(*@forks) do
+    Store.synchronize(*@forks) do
       @mutex.synchronize do
         change_state(:eating)
         puts("  #{@name} used #{@forks[0].use} and #{@forks[1].use} to eat")
@@ -61,18 +64,14 @@ class Philosopher
         change_state(nil)
       end
     end
-    sharer.name = ("#{@name} eating")
-    sharer
   end
 
   def think
-    Thread.new do
-      @mutex.synchronize do
-        change_state(:thinking)
-        puts("#{@name} is thinking, tremble!")
-        sleep(rand($min_sleep..$max_sleep))
-        change_state(nil)
-      end
+    @mutex.synchronize do
+      change_state(:thinking)
+      puts("#{@name} is thinking, tremble!")
+      sleep(rand($min_sleep..$max_sleep))
+      change_state(nil)
     end
   end
 
@@ -83,6 +82,15 @@ class Philosopher
   def act
     [true, false].sample ? eat : think
   end
+
+  def retire
+    @retired = true
+    @thread&.join
+  end
+
+  private def start
+    @thread ||= Thread.new { act until @retired }
+  end
 end
 
 fork_resources = forks.map { |fork| Store.create(fork) { Fork.new(fork) } }
@@ -92,9 +100,6 @@ philosophers.each_with_index do |name, index|
   fork_sharers << Philosopher.new(name, fork_resources[index], fork_resources[(index + 1) % fork_resources.length])
 end
 
+sleep 10
 
-100.times do
-  eater = fork_sharers.sample
-  $threads << eater.act
-end
-$threads.each(&:join)
+fork_sharers.each(&:retire)

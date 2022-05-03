@@ -21,9 +21,12 @@ class Store
 
   def self.synchronize(*resources, &block)
     keys = []
-    @registration.synchronize { keys = resources.map(&:joiner) }
-    keys.each(&:call)
-    block.call
+    # creating a virtual thread so persistent threads can safely call the resource without permanently blocking
+    Thread.new do
+      @registration.synchronize { keys = resources.map(&:resource_key) }
+      keys.each(&:call)
+      block.call
+    end.join
   end
 
   def self.[](name)

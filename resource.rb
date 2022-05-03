@@ -16,7 +16,7 @@ class Resource
   end
 
   # changes the heir to the caller and builds a connector proc to wait on the current thread
-  def joiner
+  def resource_key
     heir = nil
     @registration.synchronize do
       heir = @heir
