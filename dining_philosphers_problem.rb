@@ -1,9 +1,8 @@
-require './store'
-require './sharer'
+require './resource_warden'
+require './guard'
 
 $min_sleep = 1
 $max_sleep = 2
-$spegetii = true
 
 $threads = []
 
@@ -42,9 +41,9 @@ class Fork
 end
 
 class Philosopher
-  def initialize(name, *forks)
+  def initialize(name, resource_warden)
     @name = name
-    @forks = forks
+    @resource_warden = resource_warden
     @mutex = Mutex.new
     @retired = false
     start
@@ -55,10 +54,15 @@ class Philosopher
   end
 
   def eat
-    Store.synchronize(*@forks) do
+    @resource_warden.synchronize do
+      resources = @resource_warden.resources
       @mutex.synchronize do
         change_state(:eating)
-        puts("  #{@name} used #{@forks[0].use} and #{@forks[1].use} to eat")
+        print("  ")
+        print("#{@name} used #{resources[0].use}")
+        resources[1..-2].each { |fork| print " #{fork.use}," } if resources.length > 2
+        print(" and #{resources[-1].use}") if resources.length > 1
+        print(" to eat \n")
         sleep(rand($min_sleep..$max_sleep))
         puts("    #{@name} has finished eating")
         change_state(nil)
@@ -93,11 +97,11 @@ class Philosopher
   end
 end
 
-fork_resources = forks.map { |fork| Store.create(fork) { Fork.new(fork) } }
+fork_resources = forks.map { |fork| ResourceWarden.create(fork) { Fork.new(fork) } }
 
 fork_sharers = []
 philosophers.each_with_index do |name, index|
-  fork_sharers << Philosopher.new(name, fork_resources[index], fork_resources[(index + 1) % fork_resources.length])
+  fork_sharers << Philosopher.new(name, ResourceWarden.new(fork_resources[index], fork_resources[(index + 1) % fork_resources.length]))
 end
 
 sleep 10

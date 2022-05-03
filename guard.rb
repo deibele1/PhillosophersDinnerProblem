@@ -1,11 +1,11 @@
 # Thread wrapper to ensure resource synchronization. All exclusive resources must be registered at creation
 
-require './store'
+require './resource_warden'
 
-class Sharer < Thread
+class Guard < Thread
   def initialize(*resources, &block)
     super() do
-      Store.synchronize(*resources, &block)
+      ResourceWarden.synchronize(*resources, &block)
     end
   end
 end
