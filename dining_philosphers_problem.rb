@@ -1,8 +1,8 @@
-require './resource_warden'
-require './guard'
+gem 'resource_warden'
+require 'ResourceWarden'
 
-$min_sleep = 1
-$max_sleep = 2
+$min_sleep = 0.1
+$max_sleep = 0.2
 
 $threads = []
 
@@ -97,13 +97,15 @@ class Philosopher
   end
 end
 
-fork_resources = forks.map { |fork| ResourceWarden.create(fork) { Fork.new(fork) } }
+fork_resources = forks.map { |fork| ResourceWarden::Warden.create(fork) { Fork.new(fork) } }
 
 fork_sharers = []
 philosophers.each_with_index do |name, index|
-  fork_sharers << Philosopher.new(name, ResourceWarden.new(fork_resources[index], fork_resources[(index + 1) % fork_resources.length]))
+  fork_sharers << Philosopher.new(name, ResourceWarden::Warden.new(fork_resources[index], fork_resources[(index + 1) % fork_resources.length]))
+  # Nietzsche wants it all
+  fork_sharers << Philosopher.new(:nietzsche, ResourceWarden::Warden.new(*fork_resources))
 end
 
-sleep 10
+sleep 1
 
 fork_sharers.each(&:retire)
