@@ -1,4 +1,3 @@
-gem 'resource_warden'
 require 'ResourceWarden'
 
 $min_sleep = 0.1
@@ -93,7 +92,7 @@ class Philosopher
   end
 
   private def start
-    @thread ||= Thread.new { act until @retired }
+    @thread ||= Thread.new { sleep($min_sleep) && act until @retired }
   end
 end
 
