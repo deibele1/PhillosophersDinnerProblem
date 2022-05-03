@@ -22,7 +22,7 @@ class Store
   def self.synchronize(*resources, &block)
     keys = nil
     @registration.synchronize { keys = resources.map(&:joiner) }
-    keys.each(&:call)
+    keys.&each(&:call)
     block.call
   end
 
