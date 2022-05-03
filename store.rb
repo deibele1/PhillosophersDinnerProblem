@@ -17,9 +17,12 @@ require('./resource')
 class Store
   @store = Hash.new
   @mutex = Mutex.new
+  @registration = Mutex.new
 
   def self.synchronize(*resources, &block)
-    resources.map(&:joiner).each(&:call)
+    keys = nil
+    @registration.synchronize { keys = resources.map(&:joiner) }
+    keys.each(&:call)
     block.call
   end
 
