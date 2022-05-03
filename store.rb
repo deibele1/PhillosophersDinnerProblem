@@ -20,9 +20,9 @@ class Store
   @registration = Mutex.new
 
   def self.synchronize(*resources, &block)
-    keys = nil
+    keys = []
     @registration.synchronize { keys = resources.map(&:joiner) }
-    keys.&each(&:call)
+    keys.each(&:call)
     block.call
   end
 
